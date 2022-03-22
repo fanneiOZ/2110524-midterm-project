@@ -2,24 +2,25 @@ import http.client
 import json
 import os
 import pandas as pd
+import sys
 
 from urllib.parse import urljoin, urlencode
 
-TARGET_HOST = 'http://localhost:3000'
+TARGET_HOST = sys.argv[1] if len(sys.argv) >= 2 else 'localhost:3000'
+INIT_RUN = len(sys.argv) == 3 and sys.argv[2] == 'new'
+
 DOMAIN_PATH = '/api'
 CREATED_TEMP_FILE_NAME = 'data/created_temp.csv'
 UPDATED_TEMP_FILE_NAME = 'data/updated_temp.csv'
 DELETED_TEMP_FILE_NAME = 'data/deleted_temp.csv'
 OUTPUT_FILE_NAME = 'data/output.csv'
-
 DEFAULT_HEADERS = {'Accept': 'application/json'}
 
 
 def setup():
     os.makedirs('./data/', exist_ok=True)
-    create_dataframe([]).to_csv(CREATED_TEMP_FILE_NAME, index=False, header=False)
-    updated_dataframe = create_dataframe([])
-    deleted_dataframe = create_dataframe([])
+    if INIT_RUN:
+        create_dataframe([]).to_csv(OUTPUT_FILE_NAME, index=False, header=False)
 
 
 def parse_url(uri, query_obj=None):
@@ -34,7 +35,7 @@ def send_request(method, uri, query_obj=None, headers=None):
     query_obj = dict() if query_obj is None else query_obj
     headers = dict() if headers is None else headers
     url = f'{DOMAIN_PATH}{parse_url(uri, query_obj)}'
-    conn = http.client.HTTPConnection('localhost:3000')
+    conn = http.client.HTTPConnection(TARGET_HOST)
     conn.request(method, url, headers=headers)
     response = conn.getresponse()
     res = {
@@ -62,7 +63,7 @@ def merge_result_set(updated_dataframe, deleted_dataframe):
                 continue
             if uuid in updated_dataframe.index:
                 continue
-            print(line)
+            print(line.replace('\n', ''))
 
     for i, row in updated_dataframe.reset_index().iterrows():
         print(f"{row['uuid']},{row['author']},{row['message']},{row['likes']}")
