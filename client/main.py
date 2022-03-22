@@ -26,7 +26,7 @@ def setup():
 def parse_url(uri, query_obj=None):
     query_obj = dict() if query_obj is None else query_obj
     query_obj = urlencode(query_obj)
-    query_obj = f'?{query_obj}' if query_obj != '' else ''
+    query_obj = f"?{query_obj}" if query_obj != "" else ""
 
     return urljoin(uri, query_obj)
 
