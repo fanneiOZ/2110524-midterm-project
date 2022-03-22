@@ -33,12 +33,12 @@ async function getMessages(limit, createCursor, deleteCursor, updateCursor) {
   ])
 
   return {
-    createdData: createChange.result.map(row => avroParser.toBuffer(row).toString('binary')),
+    createdData: createChange.result.map(row => ([ row.uuid, row.author, row.message, row.likes ])),
     nextCreateCursor: createChange.nextCreateCursor,
     deletedData: deleteChange.result.join(','),
     nextDeleteCursor: deleteChange.nextDeleteCursor,
     updatedData: updateChange.result
-      .map(({ entity_id, state, }) => avroParser.toBuffer({ uuid: entity_id, ...state }).toString('binary')),
+      .map(({ entity_id, state }) => ([ entity_id, state.author, state.message, state.likes ])),
     nextUpdateCursor: updateChange.nextUpdateCursor,
   }
 }
