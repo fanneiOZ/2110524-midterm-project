@@ -1,5 +1,6 @@
 import http.client
 import json
+import pandas as pd
 from urllib.parse import urljoin, urlencode
 
 target_host = 'http://localhost:3000'
@@ -38,6 +39,8 @@ def main():
     created_data_left = True
     updated_data_left = True
     deleted_data_left = True
+    created_dataframe = create_dataframe([])
+    updated_dataframe = create_dataframe([])
 
     query = dict()
     while created_data_left or updated_data_left or deleted_data_left:
@@ -45,6 +48,9 @@ def main():
                            uri='/messages',
                            query_obj=create_query(query),
                            headers={'Accept': 'application/json', 'User-Agent': 'python/3.10'})
+
+        created_dataframe = pd.concat([created_dataframe, create_dataframe(res['body']['c'])])
+        updated_dataframe = pd.concat([updated_dataframe, create_dataframe(res['body']['u'])])
 
         deleted_data_left = res['headers']['x-delete-cursor'] != 'null'
         if deleted_data_left:
@@ -57,6 +63,10 @@ def main():
         updated_data_left = res['headers']['x-update-cursor'] != 'null'
         if updated_data_left:
             query['update_cursor'] = res['headers']['x-update-cursor']
+
+
+def create_dataframe(data):
+    return pd.DataFrame(data, columns=['uuid', 'author', 'message', 'likes'])
 
 
 main()
