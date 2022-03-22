@@ -1,0 +1,20 @@
+{
+  "name": "2110524-midterm-project",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Panya Batphantana <fanneioz@yahoo.co.th>",
+  "license": "MIT",
+  "scripts": {
+    "start": "node src/app.js"
+  },
+  "dependencies": {
+    "avro-js": "^1.11.0",
+    "cuid": "^2.1.8",
+    "express": "^4.17.3",
+    "fast-csv": "^4.3.6",
+    "pg": "^8.7.3",
+    "pg-pool": "^3.5.1",
+    "uuid": "^8.3.2",
+    "winston": "^3.6.0"
+  }
+}
