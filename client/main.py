@@ -13,6 +13,7 @@ DOMAIN_PATH = '/api'
 CREATED_TEMP_FILE_NAME = 'data/created_temp.csv'
 UPDATED_TEMP_FILE_NAME = 'data/updated_temp.csv'
 DELETED_TEMP_FILE_NAME = 'data/deleted_temp.csv'
+SAVE_FILE_NAME = 'data/save.conf'
 OUTPUT_FILE_NAME = 'data/output.csv'
 DEFAULT_HEADERS = {'Accept': 'application/json'}
 
@@ -20,7 +21,24 @@ DEFAULT_HEADERS = {'Accept': 'application/json'}
 def setup():
     os.makedirs('./data/', exist_ok=True)
     if INIT_RUN:
+        if os.path.exists(SAVE_FILE_NAME):
+            os.remove(SAVE_FILE_NAME)
+
         create_dataframe([]).to_csv(OUTPUT_FILE_NAME, index=False, header=False)
+
+
+def load_state():
+    f = open(SAVE_FILE_NAME, 'r')
+    save = json.loads(f.read())
+    f.close()
+
+    return save
+
+
+def save_state(query):
+    f = open(SAVE_FILE_NAME, 'w')
+    f.write(json.dumps(query))
+    f.close()
 
 
 def parse_url(uri, query_obj=None):
@@ -59,10 +77,9 @@ def merge_result_set(updated_dataframe, deleted_dataframe):
     with open(OUTPUT_FILE_NAME) as file:
         for line in file:
             uuid = line.split(',')[0]
-            if uuid in deleted_dataframe.index:
+            if uuid in deleted_dataframe.index or uuid in updated_dataframe.index:
                 continue
-            if uuid in updated_dataframe.index:
-                continue
+
             print(line.replace('\n', ''))
 
     for i, row in updated_dataframe.reset_index().iterrows():
@@ -73,7 +90,7 @@ def fetch_data():
     created_data_left = True
     updated_data_left = True
     deleted_data_left = True
-    query = dict()
+    query = dict() if INIT_RUN else load_state()
     updated_dataframe = create_dataframe([])
     deleted_dataframe = pd.DataFrame([], columns=['uuid'])
 
@@ -98,6 +115,7 @@ def fetch_data():
 
     updated_dataframe.set_index('uuid', drop=True, inplace=True)
     deleted_dataframe.set_index('uuid', drop=True, inplace=True)
+    save_state(query)
 
     return updated_dataframe, deleted_dataframe
 
