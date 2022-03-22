@@ -25,6 +25,7 @@ def setup():
             os.remove(SAVE_FILE_NAME)
 
         create_dataframe([]).to_csv(OUTPUT_FILE_NAME, index=False, header=False)
+        create_dataframe([]).to_csv(DELETED_TEMP_FILE_NAME, index=False, header=False)
 
 
 def load_state():
@@ -92,7 +93,7 @@ def fetch_data():
     deleted_data_left = True
     query = dict() if INIT_RUN else load_state()
     updated_dataframe = create_dataframe([])
-    deleted_dataframe = pd.DataFrame([], columns=['uuid'])
+    # deleted_dataframe = pd.DataFrame([], columns=['uuid'])
 
     while created_data_left or updated_data_left or deleted_data_left:
         res = send_request(method='GET', uri='/messages', query_obj=create_query(query), headers=DEFAULT_HEADERS)
@@ -101,7 +102,7 @@ def fetch_data():
         if deleted_data_left:
             query['delete_cursor'] = res['headers']['x-delete-cursor']
             delete = list(map(lambda x: [x], res['body']['d'].split(',')))
-            deleted_dataframe = pd.concat([deleted_dataframe, pd.DataFrame(delete, columns=['uuid'])])
+            pd.DataFrame(delete, columns=['uuid']).to_csv(DELETED_TEMP_FILE_NAME, index=False, mode='a', header=False)
 
         created_data_left = res['headers']['x-create-cursor'] != 'null'
         if created_data_left:
@@ -114,15 +115,16 @@ def fetch_data():
             updated_dataframe = pd.concat([updated_dataframe, create_dataframe(res['body']['u'])])
 
     updated_dataframe.set_index('uuid', drop=True, inplace=True)
-    deleted_dataframe.set_index('uuid', drop=True, inplace=True)
     save_state(query)
 
-    return updated_dataframe, deleted_dataframe
+    return updated_dataframe
 
 
 def main():
     setup()
-    updated_dataframe, deleted_dataframe = fetch_data()
+    updated_dataframe = fetch_data()
+    deleted_dataframe = pd.read_csv(DELETED_TEMP_FILE_NAME, header=None, names=['uuid'])
+    deleted_dataframe.set_index('uuid', drop=True, inplace=True)
     merge_result_set(updated_dataframe, deleted_dataframe)
 
 
